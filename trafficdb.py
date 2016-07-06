@@ -6,14 +6,19 @@ from datetime import date
 
 import htmlReport
 import systemWrapper
+import db
 
 options = {
     "config-file" : "trafficdb.conf", # Default configuration file
     "enable" : False, # True if service is enabled on enable
     "apache-path" : "/srv/http", # Path of apache server http directory
+    "mysql-user" : "root", # Database user
+    "mysql-password" : "toor", # Database password
+    "database" : False, # True if read logs from database
     "generate-report" : False, # True if it is called to generate report
     "service" : False, # True if it is called to run as service
     "kill" : False, # True if is called to stop service
+    "register" : False, # True if it is time to store log into database
     "interface" : "eth0", # Network interface
     "port" : None, # Port
     "mac-addr" : None, # Mac address
@@ -24,17 +29,21 @@ def main(options):
     # Parse command line arguments
     if "--help" in argv or "-h" in argv:
         print ("""\
---conf      or -c     Set configuration file.
---enable    or -en    Make service start at boot.
---disable   or -di    Stop service to start at boot.
---srv-path  or -sp    Set apache http directory.
---gen-rap   or -r     Generate report.
---service   or -s     Start service.
---kill      or -k     Kill service.
---interface or -i     Set network interface.
---port      or -p     Set port number.
---mac       or -m     Set mac addres.
---log       or -l     Set log path.
+--conf           or -c     Set configuration file.
+--enable         or -en    Make service start at boot.
+--disable        or -di    Stop service to start at boot.
+--srv-path       or -sp    Set apache http directory.
+--database       or -db    Read logs from database.
+--mysql-user     or -mu    Set mysql user.
+--mysql-password or -mp    Set mysql password.
+--register       or -rg    Register logs into database.
+--gen-rap        or -r     Generate report.
+--service        or -s     Start service.
+--kill           or -k     Kill service.
+--interface      or -i     Set network interface.
+--port           or -p     Set port number.
+--mac            or -m     Set mac addres.
+--log            or -l     Set log path.
         """)
         return False
 
@@ -62,6 +71,22 @@ def main(options):
         elif arg == "--srv-path" or arg == "-sp":
             try:
                 options["apache-path"] = argv[i + 1]
+                ignore_arg = True
+            except:
+                print ("[ERROR] Expected path.")
+                return True
+        elif arg == "--database" or arg == "-db":
+            options["database"] = True
+        elif arg == "--mysql-user" or arg == "-mu":
+            try:
+                options["mysql-user"] = argv[i + 1]
+                ignore_arg = True
+            except:
+                print ("[ERROR] Expected path.")
+                return True
+        elif arg == "--mysql-password" or arg == "-mp":
+            try:
+                options["mysql-password"] = argv[i + 1]
                 ignore_arg = True
             except:
                 print ("[ERROR] Expected path.")
@@ -100,13 +125,15 @@ def main(options):
             except:
                 print ("[ERROR] Expected path.")
                 return True
+        elif arg == "--register" or arg == "-rg":
+            options["register"] = True
         else:
             print("[ERROR] Unknown argument '%s'." % argv[i])
             return True
 
     if use_file:
         print ("[INFO] Read configuration file.")
-        allowed_config = ["apache-path", "mac-addr", "port", "interface", "log-path"]
+        allowed_config = ["apache-path", "mac-addr", "port", "interface", "log-path", "mysql-password", "mysql-user"]
 
         config = configparser.RawConfigParser()
         config.read(options["config-file"])
@@ -136,7 +163,15 @@ def main(options):
         return True
     elif options["generate-report"]:
         print ("[INFO] Read log file...")
-        report = htmlReport.readLogFile(options)
+
+        report = None
+        if not options["database"]:
+            report = htmlReport.readLogFile(options)
+        else:
+            cn = db.connectDB(options)
+            report = db.readReport(cn)
+            db.disconnectDB(cn)
+
         print ("[INFO] Generate HTML files...")
         htmlReport.generateHTMLReport(options, report, "Full.html")
 
@@ -175,12 +210,23 @@ def main(options):
         file_list = ["Full.html", "Last day.html",
                     "Last month.html", "Last year.html"]
         htmlReport.generateIndexFile(options, file_list)
+        print ("[INFO] Generated.")
     elif options["service"]:
         print ("[INFO] Start the service...")
         systemWrapper.startService(tcpdumpDaemon, options)
     elif options["kill"]:
         print ("[INFO] Stop the service...")
         systemWrapper.stopService(tcpdumpDaemon, options)
+    elif options["register"]:
+        print ("[INFO] Read log file...")
+        report = htmlReport.readLogFile(options)
+
+        print ("[INFO] Connecting to database...")
+        cn = db.connectDB(options)
+        print ("[INFO] Save logs to database...")
+        db.writeReport(cn, report)
+        db.disconnectDB(cn)
+        print ("[INFO] Saved.")
 
     return False
 
