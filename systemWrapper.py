@@ -1,5 +1,6 @@
 import sys, os, time, atexit
 from signal import SIGTERM
+import db
 
 class Daemon(object):
     """
@@ -127,9 +128,9 @@ class Daemon(object):
         """
 
 class Tcpdump(Daemon):
-    command_type_1 = "tcpdump -tttt -en -l -i %s \"src port %s and net not %s/16\""
-    command_type_2 = "tcpdump -tttt -en -l -i %s \"src port %s\""
-    command_type_3 = "tcpdump -tttt -en -l -i %s"
+    command_type_1 = "sudo tcpdump -tttt -en -l -i %s \"src port %s and net not %s/16\""
+    command_type_2 = "sudo tcpdump -tttt -en -l -i %s \"src port %s\""
+    command_type_3 = "sudo tcpdump -tttt -en -l -i %s"
     command = None
 
     def run(self):
@@ -143,6 +144,8 @@ class Tcpdump(Daemon):
             self.command = self.command_type_2 % (options["interface"], options["port"])
         else:
             self.command = self.command_type_1 % (options["interface"], options["port"], options["mac-addr"])
+        
+        print (self.command)
 
 def startService(service, options):
     service.setOptions(options)
