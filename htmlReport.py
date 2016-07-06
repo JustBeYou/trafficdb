@@ -1,4 +1,6 @@
 import os
+import hashlib
+import db
 
 def getLineElements(line, report):
     line = line.strip("\n")
@@ -60,7 +62,15 @@ def getLineElements(line, report):
         report["ContentType"].append(content)
     else:
         report["PacketLength"].append(line[i])
-        report["ContentType"].append(None)
+        report["ContentType"].append("None")
+
+    # Create hash
+    hashstring = report["SourceMAC"][-1] + report["DestinationMAC"][-1] 
+    hashstring += report["SourceIP"][-1] + report["DestinationIP"][-1]
+    hashstring += report["CurrentDate"][-1] + report["CurrentTime"][-1]
+    hashstring += report["PacketLength"][-1] + report["ContentType"][-1]
+    packethash = str(hashlib.md5(hashstring.encode("utf-8")).hexdigest())
+    report["Hash"].append(packethash)
 
 def readLogFile(options):
     report = {
@@ -76,18 +86,14 @@ def readLogFile(options):
     "IPLength": [],
     "PacketLength": [],
     "FlagsAndOptions": [],
-    "ContentType": []
+    "ContentType": [],
+    "Hash" : []
     }
 
     with open(options["log-path"], "r") as f:
         content = f.readlines()
     for line in content:
         getLineElements(line, report)
-
-    """for i in range(0, len(report["SourceMAC"])):
-        for key in report.keys():
-            print ("%s : %s" % (key, report[key][i]))
-        print ('--------------------------------------\n')"""
 
     return report
 
@@ -102,7 +108,7 @@ def generateHTMLReport(options, report, name):
     table_first_row = ["ID", "Date", "Time", "Source MAC", "Destination MAC",
                         "Source IP", "Source Port", "Destination IP",
                         "Destination Port", "Ethertype", "IP Length",
-                        "Flags And Options", "Content Length", "Content Type"]
+                        "Flags And Options", "Content Length", "Content Type", "Hash"]
 
     HTMLContent += "\t<tr>\n"
     for elem in table_first_row:
@@ -112,7 +118,7 @@ def generateHTMLReport(options, report, name):
     report_order = ["CurrentDate", "CurrentTime", "SourceMAC", "DestinationMAC",
                     "SourceIP", "SourcePort", "DestinationIP",
                     "DestinationPort", "Ethertype", "IPLength",
-                    "FlagsAndOptions", "PacketLength", "ContentType"]
+                    "FlagsAndOptions", "PacketLength", "ContentType",  "Hash"]
 
     for i in range(0, len(report["SourceMAC"])):
         HTMLContent += "\t<tr>\n"
