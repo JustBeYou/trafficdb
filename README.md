@@ -24,6 +24,7 @@ TrafficDB is formed of 3 modules:
 - Database Wrapper (databaseWrapper)
 
 **HTML Report Generator**
+
 It has 4 functions:
 - readLogFile
 - getLineElements
@@ -38,6 +39,7 @@ and generate a HTML table in a file with name taken from parameters.
 After, it place the index in the apache directory and you can see it at localhost.
 
 **System Wrapper**
+
 It has 2 classes:
 - Daemon
 - Tcpdump (child of Daemon)
@@ -52,6 +54,7 @@ And 2 functions:
 `startService` and `stopService` just starts and stops the service :)
 
 **Database Wrapper**
+
 It has 4 functions:
 - connectDB
 - disconnectDB
@@ -65,6 +68,7 @@ exists using hashing)
 `readReport` loads databse in a dictionary.
 
 **TrafficDB main file**
+
 Main file has just a main function that takes command line arguments and parse
 them. After it loads configuration file if it needs.
 It uses all modules to analyze and parse `tcpdump`, register into database and
