@@ -6,10 +6,10 @@ from datetime import date
 
 import htmlReport
 import systemWrapper
-import db
+import databaseWrapper
 
 options = {
-    "config-file" : "trafficdb.conf", # Default configuration file
+    "config-file" : "trafficdatabaseWrapper.conf", # Default configuration file
     "enable" : False, # True if service is enabled on enable
     "apache-path" : "/srv/http", # Path of apache server http directory
     "mysql-user" : "root", # Database user
@@ -22,7 +22,7 @@ options = {
     "interface" : "eth0", # Network interface
     "port" : None, # Port
     "mac-addr" : None, # Mac address
-    "log-path" : "/home/trafficdb.log" # Path of log
+    "log-path" : "/home/trafficdatabaseWrapper.log" # Path of log
 }
 
 def main(options):
@@ -145,7 +145,7 @@ def main(options):
             else:
                 options[opt] = config.get(config.sections()[0], opt)
 
-    tcpdumpDaemon = systemWrapper.Tcpdump("/tmp/trafficdb.pid", stdout = options["log-path"])
+    tcpdumpDaemon = systemWrapper.Tcpdump("/tmp/trafficdatabaseWrapper.pid", stdout = options["log-path"])
 
     print ("[INFO] Options are the following:")
     for key in options.keys():
@@ -168,9 +168,9 @@ def main(options):
         if not options["database"]:
             report = htmlReport.readLogFile(options)
         else:
-            cn = db.connectDB(options)
-            report = db.readReport(cn)
-            db.disconnectDB(cn)
+            cn = databaseWrapper.connectDB(options)
+            report = databaseWrapper.readReport(cn)
+            databaseWrapper.disconnectDB(cn)
 
         print ("[INFO] Generate HTML files...")
         htmlReport.generateHTMLReport(options, report, "Full.html")
@@ -222,10 +222,10 @@ def main(options):
         report = htmlReport.readLogFile(options)
 
         print ("[INFO] Connecting to database...")
-        cn = db.connectDB(options)
+        cn = databaseWrapper.connectDB(options)
         print ("[INFO] Save logs to database...")
-        db.writeReport(cn, report)
-        db.disconnectDB(cn)
+        databaseWrapper.writeReport(cn, report)
+        databaseWrapper.disconnectDB(cn)
         print ("[INFO] Saved.")
 
     return False

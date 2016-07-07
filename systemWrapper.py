@@ -1,6 +1,6 @@
 import sys, os, time, atexit
 from signal import SIGTERM
-import db
+import databaseWrapper
 
 class Daemon(object):
     """

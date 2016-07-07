@@ -1,6 +1,6 @@
 import os
 import hashlib
-import db
+import databaseWrapper
 
 def getLineElements(line, report):
     line = line.strip("\n")
