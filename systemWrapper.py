@@ -138,12 +138,12 @@ class Tcpdump(Daemon):
             os.system(self.command)
 
     def setOptions(self, options):
-        if options["port"] == None and options["mac-addr"] == None:
+        if options["port"] == None and options["ip-filter"] == None:
             self.command = self.command_type_3 % (options["interface"])
-        elif options["mac-addr"] == None:
+        elif options["ip-filter"] == None:
             self.command = self.command_type_2 % (options["interface"], options["port"])
         else:
-            self.command = self.command_type_1 % (options["interface"], options["port"], options["mac-addr"])
+            self.command = self.command_type_1 % (options["interface"], options["port"], options["ip-filter"])
         
         print (self.command)
 
