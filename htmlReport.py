@@ -72,6 +72,7 @@ def getLineElements(line, report):
     packethash = str(hashlib.md5(hashstring.encode("utf-8")).hexdigest())
     report["Hash"].append(packethash)
 
+
 def readLogFile(options):
     report = {
     "SourceMAC" : [],
@@ -91,58 +92,62 @@ def readLogFile(options):
     }
 
     with open(options["log-path"], "r") as f:
-        content = f.readlines()
-    for line in content:
-        getLineElements(line, report)
+        for line in f:
+            try:
+                getLineElements(line, report)
+            except:
+                print ("Unsupported line format: %s" % line)
+                print ("Register it manually or contact developer for update!")
 
     return report
 
-def generateHTMLReport(options, report, name):
-    HTMLContent = """\
-<!DOCTYPE html>\n \
-<html>\n \
-<body>\n \
-<table border=\"1\" style=\"width:100%\">\n \
-    """
-
-    table_first_row = ["ID", "Date", "Time", "Source MAC", "Destination MAC",
-                        "Source IP", "Source Port", "Destination IP",
-                        "Destination Port", "Ethertype", "IP Length",
-                        "Flags And Options", "Content Length", "Content Type", "Hash"]
-
-    HTMLContent += "\t<tr>\n"
-    for elem in table_first_row:
-        HTMLContent += "\t\t<td>%s</td>\n" % elem
-    HTMLContent += "\t</tr>\n"
-
-    report_order = ["CurrentDate", "CurrentTime", "SourceMAC", "DestinationMAC",
-                    "SourceIP", "SourcePort", "DestinationIP",
-                    "DestinationPort", "Ethertype", "IPLength",
-                    "FlagsAndOptions", "PacketLength", "ContentType",  "Hash"]
-
-    for i in range(0, len(report["SourceMAC"])):
-        HTMLContent += "\t<tr>\n"
-        HTMLContent += "\t\t<td>%s</td>\n" % i
-        for key in report_order:
-            HTMLContent += "\t\t<td>%s</td>\n" % report[key][i]
-        HTMLContent += "\t</tr>\n"
-
-    HTMLContent += "</table>\n</body>\n</html>\n"
-    with open(name, "w") as f:
-        f.write(HTMLContent)
-
-def generateIndexFile(options, file_list):
-    HTMLContent = """\
-<!DOCTYPE html>\n \
-<html>\n \
-<body>\n \
-    """
-
-    HTMLContent += "\t<center><h1>------TCPDUMP REPORT------</h1></center><br/><br/>\n"
-    for f in file_list:
-        HTMLContent += "<h3><a href=\"%s\">%s</a></h3><br/>" % ("./" + f, f.replace(".html", ""))
-        os.system("sudo cp \"%s\" \"%s\"" % (f, options["apache-path"]))
-
-    HTMLContent += "</body>\n</html>\n"
-    with open(options["apache-path"] + "/index.html", "w") as f:
-        f.write(HTMLContent)
+# OLD IMPLEMENTATION FOR REPORT GENERATION
+#def generateHTMLReport(options, report, name):
+#    HTMLContent = """\
+#<!DOCTYPE html>\n \
+#<html>\n \
+#<body>\n \
+#<table border=\"1\" style=\"width:100%\">\n \
+#    """
+#
+#    table_first_row = ["ID", "Date", "Time", "Source MAC", "Destination MAC",
+#                        "Source IP", "Source Port", "Destination IP",
+#                        "Destination Port", "Ethertype", "IP Length",
+#                        "Flags And Options", "Content Length", "Content Type", "Hash"]#
+#
+#    HTMLContent += "\t<tr>\n"
+#    for elem in table_first_row:
+#        HTMLContent += "\t\t<td>%s</td>\n" % elem
+#    HTMLContent += "\t</tr>\n"
+#
+#    report_order = ["CurrentDate", "CurrentTime", "SourceMAC", "DestinationMAC",
+#                    "SourceIP", "SourcePort", "DestinationIP",
+#                    "DestinationPort", "Ethertype", "IPLength",
+#                    "FlagsAndOptions", "PacketLength", "ContentType",  "Hash"]
+#
+#    for i in range(0, len(report["SourceMAC"])):
+#        HTMLContent += "\t<tr>\n"
+#        HTMLContent += "\t\t<td>%s</td>\n" % i
+#        for key in report_order:
+#            HTMLContent += "\t\t<td>%s</td>\n" % report[key][i]
+#        HTMLContent += "\t</tr>\n"
+#
+#    HTMLContent += "</table>\n</body>\n</html>\n"
+#    with open(name, "w") as f:
+#        f.write(HTMLContent)
+#
+#def generateIndexFile(options, file_list):
+#    HTMLContent = """\
+#<!DOCTYPE html>\n \
+#<html>\n \
+#<body>\n \
+#    """
+#
+#    HTMLContent += "\t<center><h1>------TCPDUMP REPORT------</h1></center><br/><br/>\n"
+#    for f in file_list:
+#        HTMLContent += "<h3><a href=\"%s\">%s</a></h3><br/>" % ("./" + f, f.replace(".html", ""))
+#        os.system("sudo cp \"%s\" \"%s\"" % (f, options["apache-path"]))
+#
+#    HTMLContent += "</body>\n</html>\n"
+#    with open(options["apache-path"] + "/index.html", "w") as f:
+#        f.write(HTMLContent)
