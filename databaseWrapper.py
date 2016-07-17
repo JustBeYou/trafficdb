@@ -14,18 +14,7 @@ for col in report_columns:
 
 columns_names = ', '.join(columns_names)
 
-def connectDB(options):
-    return pymysql.connect(host = "localhost",
-                            user = options["mysql-user"],
-                            password = options["mysql-password"],
-                            db = "trafficdb",
-                            charset = "utf8mb4",
-                            cursorclass = pymysql.cursors.DictCursor)
-
-def disconnectDB(connectionToDB):
-    connectionToDB.close()
-
-def writeReport(connectionToDB, report):
+def createTable(connectionToDB):
     # Try to create table
     connectionToDB.cursor().execute(
     """
@@ -51,6 +40,47 @@ def writeReport(connectionToDB, report):
     )
     connectionToDB.commit()
 
+def connectDB(options):
+    conn = pymysql.connect(host = "localhost",
+                            user = options["mysql-user"],
+                            password = options["mysql-password"],
+                            db = "trafficdb",
+                            charset = "utf8mb4",
+                            cursorclass = pymysql.cursors.DictCursor)
+    try:    
+        createTable(conn)
+    except:
+        pass
+    return conn
+
+def disconnectDB(connectionToDB):
+    connectionToDB.close()
+
+def writeEntry(connectionToDB, entry):
+    sqlstr = "INSERT INTO `traffic` (%s) VALUES (%s)"
+    teststr = "SELECT `id` FROM `traffic` WHERE `hash`='%s'"
+    hashstr = entry["Hash"]
+
+    curs = connectionToDB.cursor()
+    curs.execute(teststr % hashstr)
+    if curs.fetchone() != None:
+        return None
+
+    values = []
+    for key in report_columns:
+        val = list(entry[key])
+        if len(val) >= 255:
+            val = val[:255]
+        val.insert(0, '\'')
+        val.insert(len(val), '\'')
+        values.append(''.join(val))
+
+    values = ', '.join(values)
+
+    curs.execute(sqlstr % (columns_names, values))
+    connectionToDB.commit()
+
+def writeReport(connectionToDB, report):
     sqlstr = "INSERT INTO `traffic` (%s) VALUES (%s)"
 
     for i in range(0, len(report["SourceMAC"])):

@@ -1,6 +1,7 @@
-import sys, os, time, atexit
+import sys, os, time, atexit, subprocess
 from signal import SIGTERM
 import databaseWrapper
+import htmlReport
 
 class Daemon(object):
     """
@@ -87,6 +88,7 @@ class Daemon(object):
         """
         Stop the daemon
         """
+
         # Get the pid from the pidfile
         try:
             pf = open(self.pidfile,'r')
@@ -132,12 +134,57 @@ class Tcpdump(Daemon):
     command_type_2 = "sudo tcpdump -tttt -en -l -i %s \"src port %s\""
     command_type_3 = "sudo tcpdump -tttt -en -l -i %s"
     command = None
+    conn = None
+    log = None
+    options = None
 
     def run(self):
         while True:
-            os.system(self.command)
+            print ("TEST")
+
+            self.conn = databaseWrapper.connectDB(self.options)
+            self.log = open(self.options["log-path"], "a")
+            proc = subprocess.Popen(self.command, shell = True, stdout = subprocess.PIPE)
+
+            info = ' '.join(str(i) for i in os.uname())
+            self.log.write("--- TRAFFICDB LOG FILE ---\n")
+            self.log.write("%s\n\n\n" % info)
+            self.log.write("[INFO] Start monitoring on interface %s, port %s.\n" % (self.options["interface"], self.options["port"]))
+            self.log.write("[INFO] Tcpdump command: %s\n" % self.command)
+            print ("TEST")
+            while True:
+                line = proc.stdout.readline()
+                if line != "":
+                    entry = None
+                    line = str(line)
+
+                    #print (line)
+                    try:
+                        entry = htmlReport.getLineElements(line)
+                        #print (entry)
+                    except Exception as e:
+                        self.log.write("[ERROR] Crashed on line %s.\n" % line)
+                        self.log.write("Error: %s\n" % e)
+
+                    if entry == None:
+                        continue
+
+                    try:
+                        print ("Write entry: %s" % entry)
+                        databaseWrapper.writeEntry(self.conn, entry)
+                    except Exception as e:
+                        print ("ERROR")
+                        self.log.write("[ERROR] Database crashed on entry %s.\n" % entry)
+                        self.log.write("[ERROR] Error: %s\n" % e)
+                else:
+                    self.log.write("[INFO] Process finished.\n")
+                    break
+            databaseWrapper.disconnectDB(self.conn)
+            self.log.close()
 
     def setOptions(self, options):
+        self.options = options
+
         if options["port"] == None and options["ip-filter"] == None:
             self.command = self.command_type_3 % (options["interface"])
         elif options["ip-filter"] == None:

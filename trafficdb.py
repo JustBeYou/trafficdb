@@ -143,7 +143,7 @@ def main(options):
         return True
 
     pidFileName = "/tmp/trafficdb_%s_%s_%s.pid" % (options["interface"], options["port"], options["ip-filter"])
-    tcpdumpDaemon = systemWrapper.Tcpdump(pidFileName, stdout = options["log-path"])
+    tcpdumpDaemon = systemWrapper.Tcpdump(pidFileName, stdout = "/home/mihai/trafficdb_out.txt", stderr = "/home/mihai/trafficdb_err.txt")
 
     print ("[INFO] Options are the following:")
     for key in options.keys():
@@ -161,6 +161,7 @@ def main(options):
         return True
     elif options["service"]:
         print ("[INFO] Start the service...")
+        htmlReport.generatePHPindex(options)
         systemWrapper.startService(tcpdumpDaemon, options)
     elif options["kill"]:
         print ("[INFO] Stop the service...")
