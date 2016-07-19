@@ -140,8 +140,6 @@ class Tcpdump(Daemon):
 
     def run(self):
         while True:
-            print ("TEST")
-
             self.conn = databaseWrapper.connectDB(self.options)
             self.log = open(self.options["log-path"], "a")
             proc = subprocess.Popen(self.command, shell = True, stdout = subprocess.PIPE)
@@ -151,7 +149,6 @@ class Tcpdump(Daemon):
             self.log.write("%s\n\n\n" % info)
             self.log.write("[INFO] Start monitoring on interface %s, port %s.\n" % (self.options["interface"], self.options["port"]))
             self.log.write("[INFO] Tcpdump command: %s\n" % self.command)
-            print ("TEST")
             while True:
                 line = proc.stdout.readline()
                 if line != "":
@@ -171,9 +168,8 @@ class Tcpdump(Daemon):
 
                     try:
                         print ("Write entry: %s" % entry)
-                        databaseWrapper.writeEntry(self.conn, entry)
+                        databaseWrapper.writeEntry(self.conn, entry, self.options["table"])
                     except Exception as e:
-                        print ("ERROR")
                         self.log.write("[ERROR] Database crashed on entry %s.\n" % entry)
                         self.log.write("[ERROR] Error: %s\n" % e)
                 else:

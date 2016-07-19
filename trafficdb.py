@@ -14,15 +14,13 @@ options = {
     "apache-path" : "/srv/http", # Path of apache server http directory
     "mysql-user" : "root", # Database user
     "mysql-password" : "toor", # Database password
-    "database" : False, # True if read logs from database
-    "generate-report" : False, # True if it is called to generate report
     "service" : False, # True if it is called to run as service
     "kill" : False, # True if is called to stop service
-    "register" : False, # True if it is time to store log into database
     "interface" : "eth0", # Network interface
     "port" : None, # Port
     "ip-filter" : None, # IP address for filtering
-    "log-path" : "/home/trafficdb.log" # Path of log
+    "log-path" : "/home/trafficdb.log", # Path of log
+    "table" : "None" # Table name
 }
 
 def parseArguments(arguments):
@@ -143,7 +141,8 @@ def main(options):
         return True
 
     pidFileName = "/tmp/trafficdb_%s_%s_%s.pid" % (options["interface"], options["port"], options["ip-filter"])
-    tcpdumpDaemon = systemWrapper.Tcpdump(pidFileName, stdout = "/home/mihai/trafficdb_out.txt", stderr = "/home/mihai/trafficdb_err.txt")
+    tcpdumpDaemon = systemWrapper.Tcpdump(pidFileName, stdout = "/var/trafficdb_out.txt", stderr = "/var/trafficdb_err.txt")
+    options["table"] = "traffic_%s_%s_%s" % (options["interface"], options["port"], options["ip-filter"])
 
     print ("[INFO] Options are the following:")
     for key in options.keys():
@@ -153,10 +152,7 @@ def main(options):
         print ("[INFO] Aborted!")
         return False
 
-    if options["generate-report"] and options["service"]:
-        print ("[ERROR] You cand use only one running mode.")
-        return True
-    elif options["service"] and options["kill"]:
+    if options["service"] and options["kill"]:
         print ("[ERROR] You can't start and kill service in same time.")
         return True
     elif options["service"]:

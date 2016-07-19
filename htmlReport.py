@@ -98,70 +98,106 @@ def getLineElements(line):
 
 
 def generatePHPindex(options):
+    cn = databaseWrapper.connectDB(options)
     content = """ \
-<!DOCTYPE html>
-    <head>
-        <title>TCPDUMP REPORT</title>
-    </head>
-    <body>
-        <?php
-            echo 'Connect to db';
-            $dbh = new PDO("mysql:host=localhost;dbname=trafficdb;", "%s", "%s");
-            
-        ?>
-        <table>
-            <tr>
-                <td>Id</td>
-                <td>Date</td>
-                <td>Time</td>
-                <td>Source MAC</td>
-                <td>Destination MAC</td>
-                <td>Source IP</td>
-                <td>Source Port</td>
-                <td>Destination IP</td>
-                <td>Destination Port</td>
-                <td>Ethertype</td>
-                <td>IP Length</td>
-                <td>Flags</td>
-                <td>Packet Length</td>
-                <td>Content Type</td>
-                <td>Hash</td>
-            </tr>
-            <?php
-               echo 'LETS BUILD IT!';
-               $stmt = $dbh->query("SELECT * FROM traffic");
-               $stmt->execute();
-               $result = $stmt->fetchall(PDO::FETCH_ASSOC);
-               foreach($result as $line) {
-                    echo $line;
-                   echo "<tr>";
-                   echo "<td>".$line[id]."</td>";
-                   echo "<td>".$line[currentdate]."</td>";
-                   echo "<td>".$line[currenttime]."</td>";
-                   echo "<td>".$line[sourcemac]."</td>";
-                   echo "<td>".$line[destinationmac]."</td>";
-                   echo "<td>".$line[sourceip]."</td>";
-                   echo "<td>".$line[sourceport]."</td>";
-                   echo "<td>".$line[destinationip]."</td>";
-                   echo "<td>".$line[destinationport]."</td>";
-                   echo "<td>".$line[ethertype]."</td>";
-                   echo "<td>".$line[iplength]."</td>";
-                   echo "<td>".$line[flagsandoptions]."</td>";
-                   echo "<td>".$line[packetlength]."</td>";
-                   echo "<td>".$line[contenttype]."</td>";
-                   echo "<td>".$line[hash]."</td>";
-                   echo "</tr>";
-               }
+<!DOCTYPE HTML>
+<HEAD>
+    <TITLE>Trafficdb</TITLE>
+</HEAD>
 
-            ?>
-        </table>
-    </body>
-</html>
+<BODY>
+    <CENTER><H1>Trafficdb report</H1></CENTER><br/><br/><br/>
+    <H3>Available reports are:</H3><br/>
+    <ul>
+        %s
+    </ul>
+</BODY>
+</HTML>
     """
-    print (content % (options["mysql-user"], options["mysql-password"]))
+
+    php_file_content = """ \
+<!DOCTYPE html>
+<head>
+    <title>TrafficDB report</title>
+    <style>
+    table, th, td {
+        border: 1px solid black;
+    }
+    </style>
+</head>
+
+<body>
+    <table>
+    <tr>
+        <th>ID</th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Source MAC</th>
+        <th>Destination MAC</th>
+        <th>Source IP</th>
+        <th>Source Port</th>
+        <th>Destination IP</th>
+        <th>Destination Port</th>
+        <th>IP Length</th>
+        <th>Ethertype</th>
+        <th>Flags and Options</th>
+        <th>Packet Length</th>
+        <th>Content Type</th>
+        <th>Hash</th>
+    </tr>
+    <?php
+        $columns = "id,currentdate,currenttime,sourcemac,destinationmac,sourceip,sourceport,destinationip,destinationport,iplength,ethertype,flagsandoptions,packetlength,contenttype,hash";
+
+        $db = new PDO("mysql:host=localhost;dbname=trafficdb;charset=utf8", "root", "toor");
+        $result = $db->prepare("SELECT $columns FROM %s");
+        
+        if ($result->execute()) {
+            $rows = $result->fetchall(PDO::FETCH_ASSOC);
+            $col_names = explode(',', $columns);
+
+            foreach($rows as $row) {
+                echo "<tr>\n";
+                foreach($col_names as $col_name) {
+                    echo "<td>".$row[$col_name]."</td>\n";
+                }
+                echo "</tr>";            
+            }
+        } else {
+            echo '<tr><td>Crash!</td></tr>';
+        }
+    ?>
+    </table>
+</body>
+</html>
+"""
+
+    crs = cn.cursor()
+    crs.execute("show tables")
+    tables = crs.fetchall()
+    tables_list = ""
+
+    for table in tables:
+        tables_list += "<li>"
+        
+        php_file = "%s.php" % table["Tables_in_trafficdb"]
+
+        f = open(options["apache-path"] + "/" + php_file, "w")
+        f.write(php_file_content % table["Tables_in_trafficdb"])            
+        f.close()
+
+        tables_list += "<a href=\"./%s\">" % php_file
+        table_name_elems = table["Tables_in_trafficdb"].split("_")
+        tables_list += "Tcpdump on interface %s" % table_name_elems[1]
+        if table_name_elems[2] != "None":
+            tables_list += ", port %s" % table_name_elems[2]
+        if table_name_elems[3] != "None":
+            tables_list += ", filtered by IP %s" % table_name_elems[3]
+        tables_list += "</a></li>\n"
+
     f = open(options["apache-path"] + "/" + "index.php", "w")
-    f.write(content % (options["mysql-user"], options["mysql-password"]))
+    f.write(content % tables_list)
     f.close()
+    databaseWrapper.disconnectDB(cn)
 
 #def readTcpdumpOutput(options):
 #    report = {

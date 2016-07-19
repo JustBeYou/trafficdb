@@ -14,11 +14,11 @@ for col in report_columns:
 
 columns_names = ', '.join(columns_names)
 
-def createTable(connectionToDB):
+def createTable(connectionToDB, table):
     # Try to create table
     connectionToDB.cursor().execute(
     """
-    CREATE TABLE IF NOT EXISTS `traffic` (
+    CREATE TABLE IF NOT EXISTS `%s` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
         `currentdate` varchar(255) NOT NULL,
         `currenttime` varchar(255) NOT NULL,
@@ -37,7 +37,7 @@ def createTable(connectionToDB):
          PRIMARY KEY(`id`)
     );
     """
-    )
+    % table)
     connectionToDB.commit()
 
 def connectDB(options):
@@ -48,7 +48,7 @@ def connectDB(options):
                             charset = "utf8mb4",
                             cursorclass = pymysql.cursors.DictCursor)
     try:    
-        createTable(conn)
+        createTable(conn, options["table"])
     except:
         pass
     return conn
@@ -56,13 +56,13 @@ def connectDB(options):
 def disconnectDB(connectionToDB):
     connectionToDB.close()
 
-def writeEntry(connectionToDB, entry):
-    sqlstr = "INSERT INTO `traffic` (%s) VALUES (%s)"
-    teststr = "SELECT `id` FROM `traffic` WHERE `hash`='%s'"
+def writeEntry(connectionToDB, entry, table):
+    sqlstr = "INSERT INTO `%s` (%s) VALUES (%s)"
+    teststr = "SELECT `id` FROM `%s` WHERE `hash`='%s'"
     hashstr = entry["Hash"]
 
     curs = connectionToDB.cursor()
-    curs.execute(teststr % hashstr)
+    curs.execute(teststr % (table, hashstr))
     if curs.fetchone() != None:
         return None
 
@@ -77,7 +77,7 @@ def writeEntry(connectionToDB, entry):
 
     values = ', '.join(values)
 
-    curs.execute(sqlstr % (columns_names, values))
+    curs.execute(sqlstr % (table, columns_names, values))
     connectionToDB.commit()
 
 def writeReport(connectionToDB, report):

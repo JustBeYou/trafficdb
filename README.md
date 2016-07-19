@@ -13,6 +13,9 @@ Now you can run `trafficdb` in your console.
 Before using TrafficDB, you need to have installed on your computer
 following software:
 - Linux Distro
+- MySQL Server
+- Apache Server
+- PDO PHP Module
 - Python 3.x
 - Pip
 - PyMySql
@@ -25,18 +28,13 @@ TrafficDB is formed of 3 modules:
 
 **HTML Report Generator**
 
-It has 4 functions:
-- readLogFile
+It has 2 functions:
 - getLineElements
-- generateHTMLReport
-- generateIndexFile
+- generatePHPindex
 
-`readLogFile` function opens log file and parse each output line of `tcpdump`
-using `getLineElements`.
-`generateHTMLReport` take as parameters a dictionary of `tcpdump` parsed output
-and generate a HTML table in a file with name taken from parameters.
-`generateIndexFile` takes a list of report files and create a index for them.
-After, it place the index in the apache directory and you can see it at localhost.
+`getLineElements` split output lines from `tcpdump` and return a dictionary
+with its content.
+`generatePHPindex` generate report files into apache html folder.
 
 **System Wrapper**
 
@@ -55,16 +53,18 @@ And 2 functions:
 
 **Database Wrapper**
 
-It has 4 functions:
+It has 5 functions:
 - connectDB
 - disconnectDB
 - writeReport
 - readReport
+- writeEntry
 
 `connectDB` and `disconnectDB` creates and destroys database connection object.
 
 `writeReport` writes a report to database. (it checks each element if already 
 exists using hashing)
+`writeEntry` writes a single row to the database.
 `readReport` loads databse in a dictionary.
 
 **TrafficDB main file**
@@ -84,7 +84,7 @@ interface: *network interface name*
 log-path: */full/path/to/log/file* (optional)
 mysql-user: *username of database*
 mysql-password: *password of database*
-mac-addr: *mac address to monitorize* (optional)
+ip-filter: *ip to filter by* (optional)
 port: *port to monitorize* (optional)
 ```
 Optional configuration can be omitted as it has a default value.
@@ -96,13 +96,23 @@ After you have a configuration file, you can start monitorizing by:
 You can stop service by:
 `sudo trafficdb -c /path/to/trafficdb.conf -k`
 
-If you want to register logs into database you could use:
-`sudo trafficdb -c /path/to/trafficdb.conf -rg`
+You can start multiple times `trafficdb` if you use different configurations
+for it. For example, if you have two configuration files: `trafficdb_80.conf`
+and `trafficdb_443.conf`, first is to monitorize port 80 and second for port
+443, you can run two different processes of `trafficdb`:
 
-At last, if you need to generate a report:
-`sudo trafficdb -c /path/to/trafficdb.conf -r`
-*If log file isn't found, it will try to generate report from databse.*
+`sudo trafficdb -c /path/to/trafficdb_80.conf -s`
 
+`sudo trafficdb -c /path/to/trafficdb_443.conf -s`
+
+If you want to kill them, you need to run `trafficdb` with same configurations, 
+but with `-k` option, like `sudo trafficdb -c /path/to/trafficdb_80.conf -k`.
+
+Reports can be found at http://localhost/. Here you will see a list of all
+reports generated.
+
+Debug informations can be found into the log you selected in configuration
+(`/home/trafficdb.log` by default) and`/var/trafficdb_err.txt` for other errors.
 **Configuration file is set by `-c` option.**
 **You can omit it and set other options using command line arguments.**
 **Other command line arguments can be found using `trafficdb --help`.**
