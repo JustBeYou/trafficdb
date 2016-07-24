@@ -148,7 +148,7 @@ def generatePHPindex(options):
     <?php
         $columns = "id,currentdate,currenttime,sourcemac,destinationmac,sourceip,sourceport,destinationip,destinationport,iplength,ethertype,flagsandoptions,packetlength,contenttype,hash";
 
-        $db = new PDO("mysql:host=localhost;dbname=trafficdb;charset=utf8", "root", "toor");
+        $db = new PDO("mysql:host=localhost;dbname=trafficdb;charset=utf8", \"%s\", \"%s\");
         $result = $db->prepare("SELECT $columns FROM %s");
         
         if ($result->execute()) {
@@ -182,7 +182,7 @@ def generatePHPindex(options):
         php_file = "%s.php" % table["Tables_in_trafficdb"]
 
         f = open(options["apache-path"] + "/" + php_file, "w")
-        f.write(php_file_content % table["Tables_in_trafficdb"])            
+        f.write(php_file_content % (table["Tables_in_trafficdb"], options["mysql-user"], options["mysql-password"]))            
         f.close()
 
         tables_list += "<a href=\"./%s\">" % php_file
@@ -195,7 +195,7 @@ def generatePHPindex(options):
         tables_list += "</a></li>\n"
 
     f = open(options["apache-path"] + "/" + "index.php", "w")
-    f.write(content % tables_list)
+    f.write(content % (tables_list, options["mysql-user"], options["mysql-password"]))
     f.close()
     databaseWrapper.disconnectDB(cn)
 
