@@ -1,8 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 from sys import argv
 import configparser
 from datetime import date
+from os import system, path
 
 import htmlReport
 import systemWrapper
@@ -20,7 +21,8 @@ options = {
     "port" : None, # Port
     "ip-filter" : None, # IP address for filtering
     "log-path" : "/home/trafficdb.log", # Path of log
-    "table" : "None" # Table name
+    "table" : "None", # Table name
+    "no-confirm" : False
 }
 
 def parseArguments(arguments):
@@ -39,6 +41,7 @@ def parseArguments(arguments):
 --port           or -p     Set port number.
 --ip-filer       or -f     Set IP address for filter.
 --log            or -l     Set log path.
+--no-confirm     or -nc    Bypass confirmation.
         """)
         return False
 
@@ -90,6 +93,8 @@ def parseArguments(arguments):
             options["service"] = True
         elif arg == "--kill" or arg == "-k":
             options["kill"] = True
+        elif arg == "--no-confirm" or arg == "-nc":
+            options["no-confirm"] = True
         elif arg == "--interface" or arg == "-i":
             try:
                 options["interface"] = arguments[i + 1]
@@ -147,17 +152,30 @@ def main(options):
     print ("[INFO] Options are the following:")
     for key in options.keys():
         print ("%s: %s" % (key, options[key]))
-    choice = input("Run the program? [Y/n]? ")
-    if choice.lower() != "y":
-        print ("[INFO] Aborted!")
-        return False
+    if not options["no-confirm"]:
+        choice = input("Run the program? [Y/n]? ")
+        if choice.lower() != "y":
+            print ("[INFO] Aborted!")
+            return False
+
+    if options["enable"]:
+        if path.isfile("/etc/init.d/trafficdb_start"):
+            system("sudo cp %s /var" % options["config-file"])
+            with open("/etc/init.d/trafficdb_start", "a") as f:
+                f.write("trafficdb -c %s -s -nc\n" % ("/var/" + options["config-file"]))
+        else:
+            system("sudo cp %s /var" % options["config-file"])
+            with open("/etc/init.d/trafficdb_start", "w") as f:
+                f.write("#!/bin/sh\n")
+                f.write("trafficdb -c %s -s -nc\n" % ("/var/" + options["config-file"]))
+            system("sudo chmod +x /etc/init.d/trafficdb_start")
+            system("sudo ln -s /etc/init.d/trafficdb_start /etc/rc.d")
 
     if options["service"] and options["kill"]:
         print ("[ERROR] You can't start and kill service in same time.")
         return True
     elif options["service"]:
         print ("[INFO] Start the service...")
-        htmlReport.generatePHPindex(options)
         systemWrapper.startService(tcpdumpDaemon, options)
     elif options["kill"]:
         print ("[INFO] Stop the service...")

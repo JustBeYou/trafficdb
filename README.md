@@ -5,6 +5,7 @@ store it to a database.
 ## Installition and prerequisites
 You can install TrafficDB by running following commands:
 ```
+chmod +x /full/path/to/trafficdb.py
 cd /usr/local/bin
 sudo ln -s /full/path/to/trafficdb.py trafficdb
 ```
