@@ -14,6 +14,7 @@
 ?>
 
 <body>
+    <a href="./index.php"><h3>Home</h3></a><br/>
     <center><h1>Traffic analysis report</h1></center><br/><br/>
     <?php
         if (isset($_GET['table'])) {
@@ -21,26 +22,30 @@
              if (strpos($table_name, "traffic") !== false) {
                 $columns = "id,currentdate,currenttime,sourcemac,destinationmac,sourceip,sourceport,destinationip,destinationport,iplength,ethertype,flagsandoptions,packetlength,contenttype,hash";
 
-                $result = $db->query("SELECT $columns FROM ".$table_name);
-        
+                if (isset($_GET['order'])) {
+                    $result = $db->query("SELECT $columns FROM ".$table_name." ORDER BY ".$_GET['order']." ASC");
+                } else {
+                    $result = $db->query("SELECT $columns FROM ".$table_name);
+                }
+
                 if ($result->execute()) {
                     echo "<table>
     <tr>
-        <th>ID</th>
-        <th>Date</th>
-        <th>Time</th>
-        <th>Source MAC</th>
-        <th>Destination MAC</th>
-        <th>Source IP</th>
-        <th>Source Port</th>
-        <th>Destination IP</th>
-        <th>Destination Port</th>
-        <th>IP Length</th>
-        <th>Ethertype</th>
-        <th>Flags and Options</th>
-        <th>Packet Length</th>
-        <th>Content Type</th>
-        <th>Hash</th>
+        <th><a href=\"./index.php?table=".$table_name."&order=id\">ID</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=currentdate\">Date</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=currenttime\">Time</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=sourcemac\">Source MAC</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=destinationmac\">Destination MAC</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=sourceip\">Source IP</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=sourceport\">Source Port</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=destinationip\">Destination IP</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=destinationport\">Destination Port</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=iplength\">IP Length</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=ethertype\">Ethertype</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=flagsandoptions\">Flags and Options</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=packetlength\">Packet Length</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=contenttype\">Content Type</a></th>
+        <th><a href=\"./index.php?table=".$table_name."&order=hash\">Hash</a></th>
     </tr>";
 
                     $rows = $result->fetchall(PDO::FETCH_ASSOC);
