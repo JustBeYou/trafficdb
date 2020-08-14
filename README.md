@@ -119,4 +119,4 @@ Debug informations can be found into the log you selected in configuration
 **Other command line arguments can be found using `trafficdb --help`.**
 
 ## Bug report
-If you find any bug or problem, mail me at anonimatanonimus@gmail.com.
+If you find any bug or problem, mail me at mihailferaru2000@gmail.com
